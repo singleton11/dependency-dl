@@ -1,6 +1,7 @@
 package com.github.singleton11.depenencydl.integration
 
 import com.github.singleton11.depenencydl.integration.converter.DependencyConverter
+import com.github.singleton11.depenencydl.integration.exception.DependencyNotFoundException
 import com.github.singleton11.depenencydl.integration.model.Project
 import com.github.singleton11.depenencydl.model.Dependency
 import io.ktor.client.*
@@ -23,6 +24,6 @@ class RepositoryClient(private val httpClient: HttpClient, private val repositor
                 logger.debug("Artifact {} not found in repository {}", dependency, repository)
             }
         }
-        return emptyList()
+        throw DependencyNotFoundException(dependency)
     }
 }
