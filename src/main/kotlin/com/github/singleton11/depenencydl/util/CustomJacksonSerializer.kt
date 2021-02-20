@@ -17,8 +17,10 @@ class CustomJacksonSerializer(jackson: ObjectMapper = jacksonObjectMapper(), blo
         TextContent(backend.writeValueAsString(data), contentType)
 
     override fun read(type: TypeInfo, body: Input): Any {
-        val transformedText = Regex("<dependencies>\n\\s*</dependencies>")
-            .replace(body.readText(), "<dependencies></dependencies>")
-        return backend.readValue(transformedText, backend.typeFactory.constructType(type.reifiedType))
+        val transformedText = Regex("<!--.*-->")
+            .replace(body.readText(), "")
+        val transformedText1 = Regex("<dependencies>[\n*\\s]*</dependencies>")
+            .replace(transformedText, "<dependencies></dependencies>")
+        return backend.readValue(transformedText1, backend.typeFactory.constructType(type.reifiedType))
     }
 }

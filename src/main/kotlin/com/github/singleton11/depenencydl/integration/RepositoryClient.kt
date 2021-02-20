@@ -1,5 +1,8 @@
 package com.github.singleton11.depenencydl.integration
 
+import com.github.michaelbull.retry.ContinueRetrying
+import com.github.michaelbull.retry.StopRetrying
+import com.github.michaelbull.retry.policy.RetryPolicy
 import com.github.singleton11.depenencydl.integration.converter.DependencyConverter
 import com.github.singleton11.depenencydl.integration.exception.DependencyNotFoundException
 import com.github.singleton11.depenencydl.integration.model.Project
@@ -14,6 +17,9 @@ class RepositoryClient(private val httpClient: HttpClient, private val repositor
     private val logger = KotlinLogging.logger { }
 
     suspend fun getDependencies(dependency: Dependency): List<Dependency> {
+//        val retryTimeouts: RetryPolicy<Throwable> = {
+//            if (reason is ClientRequestException) ContinueRetrying else StopRetrying
+//        }
         for (repository in repositories) {
             val (groupId, artifactId, version) = dependency
             val pomPath = "${groupId.replace('.', '/')}/$artifactId/$version/$artifactId-$version.pom"
