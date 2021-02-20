@@ -15,15 +15,12 @@ data class DependencyTreeNode(
         other as DependencyTreeNode
 
         if (dependency != other.dependency) return false
-        if (children != other.children) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = dependency.hashCode()
-        result = 31 * result + children.hashCode()
-        return result
+        return dependency.hashCode()
     }
 
     override fun toString() =

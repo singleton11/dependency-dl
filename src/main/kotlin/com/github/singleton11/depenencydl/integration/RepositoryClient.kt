@@ -18,8 +18,10 @@ class RepositoryClient(private val httpClient: HttpClient, private val repositor
             val (groupId, artifactId, version) = dependency
             val pomPath = "${groupId.replace('.', '/')}/$artifactId/$version/$artifactId-$version.pom"
             try {
-                val response = httpClient.get<Project>("$repository$pomPath")
-                return response.dependencies.map { DependencyConverter().convert(it) }
+                val urlString = "$repository$pomPath"
+                logger.debug { "Getting dependencies using url: $urlString" }
+                val response = httpClient.get<Project>(urlString)
+                return response.dependencies?.map { DependencyConverter().convert(it) } ?: emptyList()
             } catch (e: ClientRequestException) {
                 logger.debug("Artifact {} not found in repository {}", dependency, repository)
             }

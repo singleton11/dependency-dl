@@ -17,6 +17,7 @@ val slf4jVersion = "1.7.30"
 val kotlinLoggingVersion = "1.12.0"
 val jacksonVersion = "2.12.1"
 val junitVersion = "5.6.0"
+val kotlinVersion = "1.4.30"
 
 dependencies {
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -27,6 +28,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
