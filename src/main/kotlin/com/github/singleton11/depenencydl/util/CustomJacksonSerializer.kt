@@ -17,7 +17,7 @@ class CustomJacksonSerializer(jackson: ObjectMapper = jacksonObjectMapper(), blo
         TextContent(backend.writeValueAsString(data), contentType)
 
     override fun read(type: TypeInfo, body: Input): Any {
-        val transformedText = Regex("<!--.*-->")
+        val transformedText = Regex("<!--.*?-->", setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
             .replace(body.readText(), "")
         val transformedText1 = Regex("<dependencies>[\n*\\s]*</dependencies>")
             .replace(transformedText, "<dependencies></dependencies>")

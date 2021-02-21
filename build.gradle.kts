@@ -19,6 +19,7 @@ val jacksonVersion = "2.12.1"
 val junitVersion = "5.6.0"
 val kotlinVersion = "1.4.30"
 val kotlinxCoroutinesVersion = "1.4.2"
+val kotlinRetryVersion = "1.0.8"
 
 dependencies {
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -30,6 +31,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
+    implementation("com.michael-bull.kotlin-retry:kotlin-retry:$kotlinRetryVersion")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
