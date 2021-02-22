@@ -1,7 +1,7 @@
 package com.github.singleton11.depenencydl.persistence
 
-import com.github.singleton11.depenencydl.model.Dependency
+import com.github.singleton11.depenencydl.model.Artifact
 
 interface DependencyConflictResolver {
-    fun resolve(dependency1: Dependency, dependency2: Dependency): Dependency
+    fun resolve(artifact1: Artifact, artifact2: Artifact): Artifact
 }

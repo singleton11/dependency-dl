@@ -1,9 +1,10 @@
 package com.github.singleton11.depenencydl.persistence.model
 
-import com.github.singleton11.depenencydl.model.Dependency
+import com.github.singleton11.depenencydl.model.Artifact
+
 
 data class DependencyTreeNode(
-    val dependency: Dependency,
+    val artifact: Artifact,
     val children: MutableSet<DependencyTreeNode>,
     val parents: Set<DependencyTreeNode>,
     val completed: Boolean,
@@ -14,21 +15,21 @@ data class DependencyTreeNode(
 
         other as DependencyTreeNode
 
-        if (dependency != other.dependency) return false
+        if (artifact != other.artifact) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return dependency.hashCode()
+        return artifact.hashCode()
     }
 
     override fun toString() =
-        "DependencyTreeNode(dependency=$dependency, children=$children, completed=$completed)"
+        "DependencyTreeNode(dependency=$artifact, children=$children, completed=$completed)"
 
     companion object {
         fun quasiNode() = DependencyTreeNode(
-            Dependency.quasiDependency(),
+            Artifact.quasiArtifact(),
             mutableSetOf(),
             setOf(),
             false

@@ -1,41 +1,67 @@
 package com.github.singleton11.depenencydl.core
 
-import com.github.singleton11.depenencydl.integration.RepositoryClient
-import com.github.singleton11.depenencydl.model.Dependency
+import com.github.singleton11.depenencydl.core.model.DependencyEvent
+import com.github.singleton11.depenencydl.core.model.Event
+import com.github.singleton11.depenencydl.core.model.MarkHandledEvent
+import com.github.singleton11.depenencydl.integration.ModelDependencyResolver
+import com.github.singleton11.depenencydl.integration.exception.DependencyNotFoundException
+import com.github.singleton11.depenencydl.model.Artifact
 import com.github.singleton11.depenencydl.persistence.DependencyIndex
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 
 class DependencyIndexBuilder(
     private val dependencyIndex: DependencyIndex,
-    private val repositoryClient: RepositoryClient
+    private val modelDependencyResolver: ModelDependencyResolver
 ) {
-
     private val logger = KotlinLogging.logger { }
 
-    suspend fun buildDependencyIndex(
-        dependencies: List<Dependency>
-    ) {
-        val channel = Channel<Pair<Dependency, Dependency?>>()
-        GlobalScope.launch {
-            handleDependency(channel)
+    suspend fun build(artifacts: List<Artifact>) {
+        val channel: Channel<Event> = Channel()
+
+        val handleArtifacts = GlobalScope.async {
+            handleArtifacts(channel)
         }
-        for (dependency in dependencies) {
-            channel.send(dependency to null)
+
+        for (artifact in artifacts) {
+            channel.send(DependencyEvent(artifact, null))
         }
+
+        handleArtifacts.join()
     }
 
-    private suspend fun handleDependency(channel: Channel<Pair<Dependency, Dependency?>>) {
-        for (dependencyPair in channel) {
-            val (dependency, parentDependency) = dependencyPair
-            logger.debug { "Handling dependency $dependency" }
-            dependencyIndex.add(dependency, parentDependency)
-            GlobalScope.launch {
-                val children = repositoryClient.getDependencies(dependency)
-                for (child in children) {
-                    channel.send(child to dependency)
+    private suspend fun handleArtifacts(channel: Channel<Event>) {
+        for (event in channel) {
+            when (event) {
+                is DependencyEvent -> {
+                    logger.debug { "Handling dependency ${event.artifact}" }
+
+                    val added = dependencyIndex.add(event.artifact, event.parent)
+                    if (added) {
+                        GlobalScope.launch {
+                            try {
+                                val dependencies = modelDependencyResolver.resolveDependencies(event.artifact)
+                                for (dependency in dependencies) {
+                                    channel.send(DependencyEvent(dependency, event.artifact))
+                                }
+                            } catch (e: DependencyNotFoundException) {
+                                logger.warn("Dependency ${event.artifact} not found", e)
+                            } catch (e: Exception) {
+                                throw e
+                            }
+
+                            channel.send(MarkHandledEvent(event.artifact))
+                        }
+                    }
+                }
+                is MarkHandledEvent -> {
+                    dependencyIndex.markCompleted(event.artifact)
+                    if (dependencyIndex.isAllCompleted()) {
+                        channel.close()
+                    }
                 }
             }
         }

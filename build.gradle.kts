@@ -20,6 +20,7 @@ val junitVersion = "5.6.0"
 val kotlinVersion = "1.4.30"
 val kotlinxCoroutinesVersion = "1.4.2"
 val kotlinRetryVersion = "1.0.8"
+val mavenVersion = "3.6.3"
 
 dependencies {
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -32,6 +33,12 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
     implementation("com.michael-bull.kotlin-retry:kotlin-retry:$kotlinRetryVersion")
+    implementation("org.apache.maven:maven-model:$mavenVersion")
+    implementation("org.apache.maven:maven-resolver-provider:3.6.3")
+    implementation("org.apache.maven:maven-model-builder:3.6.3")
+    implementation("org.apache.maven:maven:3.6.3")
+    implementation("com.github.zafarkhaja:java-semver:0.9.0")
+
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
