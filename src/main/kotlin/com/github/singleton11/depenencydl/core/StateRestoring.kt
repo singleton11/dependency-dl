@@ -1,5 +1,6 @@
 package com.github.singleton11.depenencydl.core
 
+import com.github.singleton11.depenencydl.integration.SimpleHttpResolver
 import com.github.singleton11.depenencydl.model.*
 import com.github.singleton11.depenencydl.persistence.DependencyIndex
 import com.github.singleton11.depenencydl.util.InputDigestGenerator
@@ -7,10 +8,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.apache.maven.model.Repository
-import org.apache.maven.model.resolution.ModelResolver
 import java.io.File
 
-class StateRestoring(private val dependencyIndex: DependencyIndex, private val modelResolver: ModelResolver) {
+class StateRestoring(private val dependencyIndex: DependencyIndex, val modelResolver: SimpleHttpResolver) {
 
     private val logger = KotlinLogging.logger { }
 

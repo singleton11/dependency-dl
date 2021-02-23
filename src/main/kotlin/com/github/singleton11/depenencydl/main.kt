@@ -13,6 +13,7 @@ import com.github.singleton11.depenencydl.model.Repositories
 import com.github.singleton11.depenencydl.model.Repository
 import com.github.singleton11.depenencydl.persistence.SemVerDependencyConflictResolver
 import com.github.singleton11.depenencydl.persistence.TreeDependencyIndex
+import com.github.singleton11.depenencydl.persistence.jar.JarDownloader
 import com.github.singleton11.depenencydl.persistence.wol.WriteAheadLogService
 import com.github.singleton11.depenencydl.util.NoopTrustManager
 import io.ktor.client.*
@@ -38,18 +39,19 @@ fun main() {
         }
     }.use { httpClient ->
 
+        val coreRepositories = listOf(
+            Repository(
+                "central",
+                "https://repo.maven.apache.org/maven2/"
+            ),
+            Repository(
+                "gradle-plugins",
+                "https://plugins.gradle.org/m2/"
+            )
+        )
         val repositories = RepositoryHelper.getInternalMavenRepositories(
             Repositories(
-                listOf(
-                    Repository(
-                        "central",
-                        "https://repo.maven.apache.org/maven2/"
-                    ),
-                    Repository(
-                        "gradle-plugins",
-                        "https://plugins.gradle.org/m2/"
-                    )
-                )
+                coreRepositories
             ).listOfPairs()
         ).toMutableList()
 
@@ -70,13 +72,9 @@ fun main() {
             .newInstance()
             .setModelValidator(NoopModelValidator())
 
-        val modelDependencyResolver = ModelDependencyResolver(
-            defaultModelBuilder,
-            simpleHttpResolver
-        )
+        val modelDependencyResolver = ModelDependencyResolver(defaultModelBuilder, simpleHttpResolver)
 
-//        val resolveDependencies =
-//            modelDependencyResolver.resolveDependencies(Artifact("org.apache.maven", "maven-parent", "25"))
+//        val resolveDependencies = modelDependencyResolver.resolveDependencies(Artifact("org.apache.maven", "maven-parent", "25"))
 //        println(resolveDependencies)
 
 //        val artifacts = listOf(
@@ -96,7 +94,6 @@ fun main() {
         )
 
         val writeAheadLogService = WriteAheadLogService(artifacts)
-
         val dependencyIndex = TreeDependencyIndex(SemVerDependencyConflictResolver())
         val dependencyIndexBuilder =
             DependencyIndexBuilder(
@@ -105,13 +102,11 @@ fun main() {
                 writeAheadLogService,
                 channel
             )
-
-        val dependencyDownloader =
-            DependencyDownloader(StateRestoring(dependencyIndex, simpleHttpResolver), dependencyIndexBuilder)
+        val jarDownloader = JarDownloader(httpClient)
+        val stateRestoring = StateRestoring(dependencyIndex, simpleHttpResolver)
+        val dependencyDownloader = DependencyDownloader(stateRestoring, dependencyIndexBuilder, jarDownloader)
         runBlocking {
             dependencyDownloader.run(artifacts)
-            // Download dependencies
-            println(dependencyIndexBuilder)
         }
     }
 }

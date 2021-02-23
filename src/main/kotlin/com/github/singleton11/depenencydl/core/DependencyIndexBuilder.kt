@@ -48,6 +48,8 @@ class DependencyIndexBuilder(
 
     fun getDependenciesForDownload() = dependencyIndex.getDependenciesToDownload()
 
+    fun getRepositories() = repositories.toList()
+
     private suspend fun handleArtifacts() {
         for (event in channel) {
             logger.debug { "Received event $event" }

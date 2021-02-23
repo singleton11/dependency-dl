@@ -34,7 +34,7 @@ import java.util.*
 
 class SimpleHttpResolver(
     private val httpClient: HttpClient,
-    private val repositories: MutableList<Repository> = Collections.synchronizedList(mutableListOf()),
+    val repositories: MutableList<Repository> = Collections.synchronizedList(mutableListOf()),
     private val manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
     private val channel: Channel<Event>
 ) : ModelResolver {
