@@ -1,5 +1,8 @@
 package com.github.singleton11.depenencydl.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Artifact(
     val groupId: String,
     val artifactId: String,
@@ -24,6 +27,7 @@ data class Artifact(
         result = 31 * result + artifactId.hashCode()
         return result
     }
+
     companion object {
         fun quasiArtifact() = Artifact("ROOT", "ROOT", "ROOT")
     }

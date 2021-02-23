@@ -9,9 +9,12 @@ import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
 import com.github.singleton11.depenencydl.integration.exception.DependencyNotFoundException
 import com.github.singleton11.depenencydl.model.Artifact
+import com.github.singleton11.depenencydl.model.Event
+import com.github.singleton11.depenencydl.model.RepositoryAddedEvent
 import io.ktor.client.*
 import io.ktor.client.features.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.apache.maven.model.Dependency
@@ -28,7 +31,8 @@ import java.util.*
 class SimpleHttpResolver(
     private val httpClient: HttpClient,
     private val repositories: MutableList<Repository> = Collections.synchronizedList(mutableListOf()),
-    private val manualReplacements: List<Pair<Artifact, Artifact>> = listOf()
+    private val manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
+    private val channel: Channel<Event>
 ) : ModelResolver {
 
     private val logger = KotlinLogging.logger { }
@@ -115,13 +119,33 @@ class SimpleHttpResolver(
 
     override fun addRepository(repository: Repository) {
         internalRepositories = internalRepositories + repository
+        runBlocking {
+            channel.send(
+                RepositoryAddedEvent(
+                    com.github.singleton11.depenencydl.model.Repository(
+                        repository.id,
+                        repository.url
+                    ), false
+                )
+            )
+        }
     }
 
     override fun addRepository(repository: Repository, replace: Boolean) {
         internalRepositories = internalRepositories.filter { it.url != repository.url } + repository
+        runBlocking {
+            channel.send(
+                RepositoryAddedEvent(
+                    com.github.singleton11.depenencydl.model.Repository(
+                        repository.id,
+                        repository.url
+                    ), true
+                )
+            )
+        }
     }
 
     override fun newCopy(): ModelResolver {
-        return SimpleHttpResolver(httpClient, internalRepositories.toMutableList())
+        return SimpleHttpResolver(httpClient, internalRepositories.toMutableList(), channel = channel)
     }
 }

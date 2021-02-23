@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.4.30"
+    kotlin("plugin.serialization") version "1.4.30"
 }
 
 group = "com.github.singleton11"
@@ -38,6 +39,7 @@ dependencies {
     implementation("org.apache.maven:maven-model-builder:3.6.3")
     implementation("org.apache.maven:maven:3.6.3")
     implementation("com.github.zafarkhaja:java-semver:0.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 
 
     testImplementation(kotlin("test-junit5"))
