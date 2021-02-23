@@ -4,7 +4,6 @@ import com.github.singleton11.depenencydl.core.model.DependencyEvent
 import com.github.singleton11.depenencydl.core.model.Event
 import com.github.singleton11.depenencydl.core.model.MarkHandledEvent
 import com.github.singleton11.depenencydl.integration.ModelDependencyResolver
-import com.github.singleton11.depenencydl.integration.exception.DependencyNotFoundException
 import com.github.singleton11.depenencydl.model.Artifact
 import com.github.singleton11.depenencydl.persistence.DependencyIndex
 import kotlinx.coroutines.GlobalScope
@@ -37,7 +36,7 @@ class DependencyIndexBuilder(
         for (event in channel) {
             when (event) {
                 is DependencyEvent -> {
-                    logger.debug { "Handling dependency ${event.artifact}" }
+                    logger.info { "Handling dependency ${event.artifact}" }
 
                     val added = dependencyIndex.add(event.artifact, event.parent)
                     if (added) {
@@ -47,13 +46,12 @@ class DependencyIndexBuilder(
                                 for (dependency in dependencies) {
                                     channel.send(DependencyEvent(dependency, event.artifact))
                                 }
-                            } catch (e: DependencyNotFoundException) {
-                                logger.warn("Dependency ${event.artifact} not found", e)
+                                channel.send(MarkHandledEvent(event.artifact))
                             } catch (e: Exception) {
+                                logger.error { e }
+                                channel.close()
                                 throw e
                             }
-
-                            channel.send(MarkHandledEvent(event.artifact))
                         }
                     }
                 }
@@ -65,5 +63,6 @@ class DependencyIndexBuilder(
                 }
             }
         }
+
     }
 }

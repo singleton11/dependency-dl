@@ -17,9 +17,8 @@ class ModelDependencyResolver(private val modelBuilder: ModelBuilder, private va
         request.pomFile = resolvedModel.file
         request.systemProperties["java.version"] = "11"
         request.systemProperties["java.home"] = "/"
-        return modelBuilder
-            .build(request)
-            .effectiveModel
+        val effectiveModel = modelBuilder.build(request).effectiveModel
+        return effectiveModel
             .dependencies
             .filter { it.scope != "system" }
             .map { dependency ->
