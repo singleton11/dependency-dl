@@ -74,24 +74,21 @@ fun main() {
 
         val modelDependencyResolver = ModelDependencyResolver(defaultModelBuilder, simpleHttpResolver)
 
-//        val resolveDependencies = modelDependencyResolver.resolveDependencies(Artifact("org.apache.maven", "maven-parent", "25"))
-//        println(resolveDependencies)
+        val artifacts = listOf(
+            Artifact(
+                "org.jfrog.buildinfo",
+                "build-info-extractor-gradle",
+                "4.20.0"
+            )
+        )
 
 //        val artifacts = listOf(
 //            Artifact(
-//                "org.jfrog.buildinfo",
-//                "build-info-extractor-gradle",
-//                "4.20.0"
+//                "junit",
+//                "junit",
+//                "4.13.2"
 //            )
 //        )
-
-        val artifacts = listOf(
-            Artifact(
-                "junit",
-                "junit",
-                "4.13.2"
-            )
-        )
 
         val writeAheadLogService = WriteAheadLogService(artifacts)
         val dependencyIndex = TreeDependencyIndex(SemVerDependencyConflictResolver())

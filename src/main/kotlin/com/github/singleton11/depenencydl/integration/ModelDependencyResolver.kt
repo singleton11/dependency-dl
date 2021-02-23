@@ -17,10 +17,13 @@ class ModelDependencyResolver(private val modelBuilder: ModelBuilder, private va
         request.pomFile = resolvedModel.file
         request.systemProperties["java.version"] = "11"
         request.systemProperties["java.home"] = "/"
+        request.systemProperties["java.specification.version"] = "11"
+        request.systemProperties["os.arch"] = "amd64"
         val effectiveModel = modelBuilder.build(request).effectiveModel
         return effectiveModel
             .dependencies
             .filter { it.scope != "system" }
+            .filter { !it.isOptional }
             .map { dependency ->
                 val createFromVersionSpec = VersionRange.createFromVersionSpec(dependency.version)
                 val dependencyVersion = createFromVersionSpec.recommendedVersion?.toString() ?: kotlin.run {

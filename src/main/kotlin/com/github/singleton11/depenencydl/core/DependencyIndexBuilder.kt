@@ -53,7 +53,8 @@ class DependencyIndexBuilder(
     private suspend fun handleArtifacts() {
         for (event in channel) {
             logger.debug { "Received event $event" }
-            writeAheadLogService.write(event)
+            val shouldNotWriteWol = event is DependencyEvent && event.isRestored
+            if (!shouldNotWriteWol) writeAheadLogService.write(event)
             when (event) {
                 is DependencyEvent -> {
                     logger.info { "Handling dependency ${event.artifact}" }
