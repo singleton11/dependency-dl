@@ -71,6 +71,12 @@ class SimpleHttpResolver(
             val file = File(it)
             return FileModelSource(file)
         } ?: kotlin.run {
+            val filePath = "poms/$groupId-$artifactId-$version.xml"
+            val localFile = File(filePath)
+            if (localFile.exists()) {
+                internalCache[Triple(groupId, artifactId, version)] = filePath
+                return FileModelSource(localFile)
+            }
             for (repository in internalRepositories) {
                 val repositoryUrl = repository.url
                 val pomPath = "${groupId.replace('.', '/')}/$artifactId/$version/$artifactId-$version.pom"
@@ -86,7 +92,6 @@ class SimpleHttpResolver(
                         }
                     }
                     logger.debug { "Got artifact metadata $urlString" }
-                    val filePath = "poms/$groupId-$artifactId-$version.xml"
                     val file = File(filePath)
                     FileChannel
                         .open(Path.of(filePath), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
@@ -95,9 +100,8 @@ class SimpleHttpResolver(
                             channel.write(buff)
                         }
                     logger.debug { "Artifact metadata saved to ${file.toURI()}" }
-                    val fileModelSource = FileModelSource(file)
                     internalCache[Triple(groupId, artifactId, version)] = filePath
-                    return fileModelSource
+                    return FileModelSource(file)
                 } catch (e: ClientRequestException) {
                     logger.debug(
                         "Dependency {} not found in repository {}",
