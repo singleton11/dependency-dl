@@ -23,6 +23,7 @@ import org.apache.maven.model.Repository
 import org.apache.maven.model.building.ModelSource2
 import org.apache.maven.model.resolution.ModelResolver
 import java.io.File
+import java.net.BindException
 import java.net.ConnectException
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
@@ -87,7 +88,7 @@ class SimpleHttpResolver(
                         val retryTimeouts: RetryPolicy<Throwable> = {
                             if (reason is ConnectException) ContinueRetrying else StopRetrying
                         }
-                        retry(retryTimeouts + limitAttempts(50) + binaryExponentialBackoff(base = 10L, max = 10000L)) {
+                        retry(retryTimeouts + limitAttempts(10) + binaryExponentialBackoff(base = 10L, max = 10000L)) {
                             httpClient.get<String>(urlString)
                         }
                     }
@@ -109,7 +110,13 @@ class SimpleHttpResolver(
                         repositoryUrl
                     )
                 } catch (e: UnresolvedAddressException) {
-                    logger.debug("Unresolved address in dependency {}", "$groupId:$artifactId:$version", repositoryUrl)
+                    logger.warn("Unresolved address in dependency {}", "$groupId:$artifactId:$version", repositoryUrl)
+                } catch (e: BindException) {
+                    logger.warn(
+                        "Can't assign requested address for dependency {}",
+                        "$groupId:$artifactId:$version",
+                        repositoryUrl
+                    )
                 }
             }
         }

@@ -30,8 +30,10 @@ fun main() {
         engine {
             maxConnectionsCount = 20
             pipelining = true
+            requestTimeout = 1000
             endpoint {
                 connectAttempts = 10
+                connectTimeout = 1000
             }
             https {
                 trustManager = NoopTrustManager()
