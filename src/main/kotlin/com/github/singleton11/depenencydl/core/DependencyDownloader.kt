@@ -13,7 +13,9 @@ class DependencyDownloader(
 
     suspend fun run(artifacts: List<Artifact>) {
         if (stateRestoring.restoreState(artifacts)) {
-            dependencyIndexBuilder.buildRestored(stateRestoring.getDependencyBuilderInput())
+            if (!dependencyIndexBuilder.isBuildCompleted()) {
+                dependencyIndexBuilder.buildRestored(stateRestoring.getDependencyBuilderInput())
+            }
         } else {
             dependencyIndexBuilder.build(artifacts)
         }
