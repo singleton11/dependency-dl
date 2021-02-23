@@ -32,6 +32,22 @@ class DependencyIndexBuilder(
         handleArtifacts.join()
     }
 
+    suspend fun buildRestored(events: List<DependencyEvent>) {
+        val handleArtifacts = GlobalScope.async {
+            handleArtifacts()
+        }
+
+        for (event in events) {
+            channel.send(event.copy(isRestored = true))
+        }
+
+        handleArtifacts.join()
+    }
+
+    fun isBuildCompleted() = dependencyIndex.isAllCompleted()
+
+    fun getDependenciesForDownload() = dependencyIndex.getDependenciesToDownload()
+
     private suspend fun handleArtifacts() {
         for (event in channel) {
             logger.debug { "Received event $event" }
@@ -41,7 +57,7 @@ class DependencyIndexBuilder(
                     logger.info { "Handling dependency ${event.artifact}" }
                     val added = dependencyIndex.add(event.artifact, event.parent)
                     if (!added) logger.debug { "Artifact already exists ${event.artifact}" }
-                    if (added) {
+                    if (added || event.isRestored) {
                         GlobalScope.launch {
                             logger.debug { "Coroutine for resolving dependency started ${event.artifact}" }
                             try {

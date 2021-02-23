@@ -2,12 +2,12 @@ package com.github.singleton11.depenencydl.persistence.wol
 
 import com.github.singleton11.depenencydl.model.Artifact
 import com.github.singleton11.depenencydl.model.Event
+import com.github.singleton11.depenencydl.util.InputDigestGenerator
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import java.io.File
 import java.io.FileOutputStream
-import java.security.MessageDigest
 
 class WriteAheadLogService(artifacts: List<Artifact>) {
 
@@ -16,12 +16,7 @@ class WriteAheadLogService(artifacts: List<Artifact>) {
 
     init {
         File("index/").mkdirs()
-        file = File(
-            "index/" + MessageDigest
-                .getInstance("SHA-256")
-                .digest(artifacts.map { it.toString() }.reduce { acc, s -> acc + s }.toByteArray())
-                .fold("", { str, it -> str + "%02x".format(it) })
-        )
+        file = File("index/" + InputDigestGenerator.generate(artifacts))
     }
 
     fun write(event: Event) {

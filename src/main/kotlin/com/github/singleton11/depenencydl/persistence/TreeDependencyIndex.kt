@@ -1,7 +1,9 @@
 package com.github.singleton11.depenencydl.persistence
 
 import com.github.singleton11.depenencydl.model.Artifact
+import com.github.singleton11.depenencydl.model.DependencyEvent
 import com.github.singleton11.depenencydl.persistence.model.DependencyTreeNode
+import java.util.*
 
 class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConflictResolver) : DependencyIndex {
 
@@ -31,7 +33,27 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
     override fun alreadyHandled(artifact: Artifact) =
         handledDependencies.contains(Triple(artifact.groupId, artifact.artifactId, artifact.version))
 
+    override fun getNotHandled() = notHandledDependencies
+        .map { Artifact(it.first, it.second, it.third) }
+        .filter { dependencyMap.containsKey(it) }.map { dependencyMap[it] }
+        .map { DependencyEvent(it!!.artifact, it.parents.first().artifact) }
+
     override fun isAllCompleted() = notHandledDependencies.isEmpty()
+
+    override fun getDependenciesToDownload(): List<Artifact> {
+        val stack = Stack<DependencyTreeNode>()
+        stack.push(rootNode)
+
+        val artifacts = mutableListOf<Artifact>()
+
+        while (stack.isNotEmpty()) {
+            val dependencyTreeNode = stack.pop()
+            artifacts.add(dependencyTreeNode.artifact)
+            stack.addAll(dependencyTreeNode.children)
+        }
+
+        return artifacts.filter { it != Artifact.quasiArtifact() }
+    }
 
     private fun add(artifact: Artifact, parentNode: DependencyTreeNode): Boolean {
         return dependencyMap[artifact]?.let { existedNode ->

@@ -1,6 +1,8 @@
 package com.github.singleton11.depenencydl
 
+import com.github.singleton11.depenencydl.core.DependencyDownloader
 import com.github.singleton11.depenencydl.core.DependencyIndexBuilder
+import com.github.singleton11.depenencydl.core.StateRestoring
 import com.github.singleton11.depenencydl.integration.ModelDependencyResolver
 import com.github.singleton11.depenencydl.integration.NoopModelValidator
 import com.github.singleton11.depenencydl.integration.SimpleHttpResolver
@@ -74,28 +76,40 @@ fun main() {
         )
 
 //        val resolveDependencies =
-//            modelDependencyResolver.resolveDependencies(Artifact("org.apache.velocity", "velocity", "1.6.2"))
+//            modelDependencyResolver.resolveDependencies(Artifact("org.apache.maven", "maven-parent", "25"))
 //        println(resolveDependencies)
+
+//        val artifacts = listOf(
+//            Artifact(
+//                "org.jfrog.buildinfo",
+//                "build-info-extractor-gradle",
+//                "4.20.0"
+//            )
+//        )
 
         val artifacts = listOf(
             Artifact(
-                "org.jfrog.buildinfo",
-                "build-info-extractor-gradle",
-                "4.20.0"
+                "junit",
+                "junit",
+                "4.13.2"
             )
         )
 
         val writeAheadLogService = WriteAheadLogService(artifacts)
 
+        val dependencyIndex = TreeDependencyIndex(SemVerDependencyConflictResolver())
         val dependencyIndexBuilder =
             DependencyIndexBuilder(
-                TreeDependencyIndex(SemVerDependencyConflictResolver()),
+                dependencyIndex,
                 modelDependencyResolver,
                 writeAheadLogService,
                 channel
             )
+
+        val dependencyDownloader =
+            DependencyDownloader(StateRestoring(dependencyIndex, simpleHttpResolver), dependencyIndexBuilder)
         runBlocking {
-            dependencyIndexBuilder.build(artifacts)
+            dependencyDownloader.run(artifacts)
             // Download dependencies
             println(dependencyIndexBuilder)
         }

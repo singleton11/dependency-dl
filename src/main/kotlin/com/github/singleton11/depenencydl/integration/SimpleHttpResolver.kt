@@ -22,11 +22,15 @@ import org.apache.maven.model.Parent
 import org.apache.maven.model.Repository
 import org.apache.maven.model.building.ModelSource2
 import org.apache.maven.model.resolution.ModelResolver
-import org.codehaus.plexus.util.FileUtils
 import java.io.File
 import java.net.ConnectException
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.channels.UnresolvedAddressException
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.util.*
+
 
 class SimpleHttpResolver(
     private val httpClient: HttpClient,
@@ -84,7 +88,12 @@ class SimpleHttpResolver(
                     logger.debug { "Got artifact metadata $urlString" }
                     val filePath = "poms/$groupId-$artifactId-$version.xml"
                     val file = File(filePath)
-                    FileUtils.fileWrite(file, pom)
+                    FileChannel
+                        .open(Path.of(filePath), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+                        .use { channel ->
+                            val buff: ByteBuffer = ByteBuffer.wrap(pom.toByteArray())
+                            channel.write(buff)
+                        }
                     logger.debug { "Artifact metadata saved to ${file.toURI()}" }
                     val fileModelSource = FileModelSource(file)
                     internalCache[Triple(groupId, artifactId, version)] = filePath
