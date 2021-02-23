@@ -31,6 +31,11 @@ class DependencyDownloader(
             throw BuildException()
         }
 
+        downloadJars()
+    }
+
+    private suspend fun downloadJars() {
+        logger.info { "Downloading jars" }
         val dependenciesForDownload = dependencyIndexBuilder.getDependenciesForDownload()
         val repositories = stateRestoring.modelResolver.repositories.map { Repository(it.id, it.url) }
         val coroutines = mutableListOf<Deferred<Unit>>()
