@@ -1,0 +1,2 @@
+central https://repo.maven.apache.org/maven2/
+gradle-plugins https://plugins.gradle.org/m2/

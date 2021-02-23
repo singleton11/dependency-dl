@@ -22,9 +22,19 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.runBlocking
 import org.apache.maven.model.building.DefaultModelBuilderFactory
+import java.io.File
 
 
 fun main() {
+
+    val artifacts = File("dependencies.txt")
+        .readLines()
+        .map { it.split(":") }
+        .map { Artifact(it[0], it[1], it[2]) }
+    val coreRepositories = File("repositories.txt")
+        .readLines()
+        .map { it.split(" ") }
+        .map { Repository(it[0], it[1]) }
 
     HttpClient(CIO) {
         engine {
@@ -41,16 +51,6 @@ fun main() {
         }
     }.use { httpClient ->
 
-        val coreRepositories = listOf(
-            Repository(
-                "central",
-                "https://repo.maven.apache.org/maven2/"
-            ),
-            Repository(
-                "gradle-plugins",
-                "https://plugins.gradle.org/m2/"
-            )
-        )
         val repositories = RepositoryHelper.getInternalMavenRepositories(
             Repositories(
                 coreRepositories
@@ -75,22 +75,6 @@ fun main() {
             .setModelValidator(NoopModelValidator())
 
         val modelDependencyResolver = ModelDependencyResolver(defaultModelBuilder, simpleHttpResolver)
-
-        val artifacts = listOf(
-            Artifact(
-                "org.jfrog.buildinfo",
-                "build-info-extractor-gradle",
-                "4.20.0"
-            )
-        )
-
-//        val artifacts = listOf(
-//            Artifact(
-//                "junit",
-//                "junit",
-//                "4.13.2"
-//            )
-//        )
 
         val writeAheadLogService = WriteAheadLogService(artifacts)
         val dependencyIndex = TreeDependencyIndex(SemVerDependencyConflictResolver())
