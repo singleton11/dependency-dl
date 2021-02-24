@@ -1,7 +1,6 @@
 package com.github.singleton11.depenencydl.persistence
 
 import com.github.singleton11.depenencydl.model.Artifact
-import com.github.singleton11.depenencydl.model.DependencyEvent
 import com.github.singleton11.depenencydl.persistence.model.DependencyTreeNode
 import java.util.*
 
@@ -29,14 +28,6 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
     override fun markCompleted(artifact: Artifact) {
         notHandledDependencies.remove(Triple(artifact.groupId, artifact.artifactId, artifact.version))
     }
-
-    override fun alreadyHandled(artifact: Artifact) =
-        handledDependencies.contains(Triple(artifact.groupId, artifact.artifactId, artifact.version))
-
-    override fun getNotHandled() = notHandledDependencies
-        .map { Artifact(it.first, it.second, it.third) }
-        .filter { dependencyMap.containsKey(it) }.map { dependencyMap[it] }
-        .map { DependencyEvent(it!!.artifact, it.parents.first().artifact) }
 
     override fun isAllCompleted() = notHandledDependencies.isEmpty()
 
