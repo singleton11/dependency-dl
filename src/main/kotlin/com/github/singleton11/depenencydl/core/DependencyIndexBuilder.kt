@@ -3,21 +3,31 @@ package com.github.singleton11.depenencydl.core
 import com.github.singleton11.depenencydl.integration.ModelDependencyResolver
 import com.github.singleton11.depenencydl.model.*
 import com.github.singleton11.depenencydl.persistence.DependencyIndex
-import com.github.singleton11.depenencydl.persistence.wol.WriteAheadLogService
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 
 class DependencyIndexBuilder(
     private val dependencyIndex: DependencyIndex,
-    private val modelDependencyResolver: ModelDependencyResolver,
-    private val writeAheadLogService: WriteAheadLogService,
-    private val channel: Channel<Event>,
-) {
+    val modelDependencyResolver: ModelDependencyResolver,
+    private val manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
+
+    ) {
     private val logger = KotlinLogging.logger { }
-    private val repositories: MutableList<Repository> = mutableListOf()
+    private val channel: Channel<Event> = Channel(Channel.UNLIMITED)
+    private val internalManualReplacements: Map<Triple<String, String, String>, Triple<String, String, String>> =
+        manualReplacements
+            .map {
+                Triple(it.first.groupId, it.first.artifactId, it.first.version) to Triple(
+                    it.second.groupId,
+                    it.second.artifactId,
+                    it.second.version
+                )
+            }
+            .toMap()
 
     suspend fun build(artifacts: List<Artifact>) {
 
@@ -32,51 +42,36 @@ class DependencyIndexBuilder(
         handleArtifacts.join()
     }
 
-    suspend fun buildRestored(events: List<DependencyEvent>) {
-        val handleArtifacts = GlobalScope.async {
-            handleArtifacts()
-        }
-
-        for (event in events) {
-            channel.send(event.copy(isRestored = true))
-        }
-
-        handleArtifacts.join()
-    }
-
     fun isBuildCompleted() = dependencyIndex.isAllCompleted()
 
     fun getDependenciesForDownload() = dependencyIndex.getDependenciesToDownload()
 
-    fun getRepositories() = repositories.toList()
-
     private suspend fun handleArtifacts() {
         for (event in channel) {
             logger.debug { "Received event $event" }
-            val shouldNotWriteWol = event is DependencyEvent && event.isRestored
-            if (!shouldNotWriteWol) writeAheadLogService.write(event)
             when (event) {
                 is DependencyEvent -> {
                     logger.info { "Handling dependency ${event.artifact}" }
                     val added = dependencyIndex.add(event.artifact, event.parent)
                     if (!added) logger.debug { "Artifact already exists ${event.artifact}" }
-                    if (added || event.isRestored) {
-                        GlobalScope.launch {
-                            logger.debug { "Coroutine for resolving dependency started ${event.artifact}" }
-                            try {
-                                logger.debug { "Resolving dependencies for ${event.artifact}" }
-                                val dependencies = modelDependencyResolver.resolveDependencies(event.artifact)
-                                for (dependency in dependencies) {
-                                    logger.debug { "Sending child into channel $dependency" }
-                                    channel.send(DependencyEvent(dependency, event.artifact))
-                                }
-                                logger.debug { "Sending mark handled event into channel for ${event.artifact}" }
-                                channel.send(MarkHandledEvent(event.artifact))
-                            } catch (e: Exception) {
-                                logger.error { e }
-                                channel.close()
-                                throw e
+                    GlobalScope.launch {
+                        logger.debug { "Coroutine for resolving dependency started ${event.artifact}" }
+                        try {
+                            logger.debug { "Resolving dependencies for ${event.artifact}" }
+                            val dependencies = modelDependencyResolver.resolveDependencies(event.artifact)
+                            for (dependency in dependencies) {
+                                val newDependency = replaceManualDependencyIfNeeded(dependency)
+                                logger.debug { "Sending child into channel $newDependency" }
+                                channel.send(DependencyEvent(newDependency, event.artifact))
                             }
+                            logger.debug { "Sending mark handled event into channel for ${event.artifact}" }
+                            channel.send(MarkHandledEvent(event.artifact))
+                        } catch (e: ClosedSendChannelException) {
+                            // Do nothing
+                        } catch (e: Exception) {
+                            logger.error { e }
+                            channel.close()
+                            throw e
                         }
                     }
                 }
@@ -86,17 +81,14 @@ class DependencyIndexBuilder(
                         channel.close()
                     }
                 }
-                is RepositoryAddedEvent -> {
-                    if (event.replaced) {
-                        repositories.firstOrNull { event.repository.url == it.url }?.let {
-                            repositories.remove(it)
-                            repositories.add(event.repository)
-                        }
-                    } else {
-                        repositories.add(event.repository)
-                    }
-                }
             }
         }
+    }
+
+    private fun replaceManualDependencyIfNeeded(dependency: Artifact): Artifact {
+        val (groupId, artifactId, version) = dependency
+        val (newGroupId, newArtifactId, newVersion) = internalManualReplacements[Triple(groupId, artifactId, version)]
+            ?: Triple(groupId, artifactId, version)
+        return Artifact(newGroupId, newArtifactId, newVersion)
     }
 }

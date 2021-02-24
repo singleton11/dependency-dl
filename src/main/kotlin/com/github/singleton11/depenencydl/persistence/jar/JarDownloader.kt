@@ -1,8 +1,10 @@
 package com.github.singleton11.depenencydl.persistence.jar
 
+import com.github.singleton11.depenencydl.core.exception.DependencyJarNotFoundException
 import com.github.singleton11.depenencydl.model.Artifact
 import com.github.singleton11.depenencydl.model.Repository
 import io.ktor.client.*
+import io.ktor.client.features.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -30,21 +32,30 @@ class JarDownloader(private val httpClient: HttpClient) {
                 )
             }/${artifact.artifactId}/${artifact.version}/${artifact.artifactId}-${artifact.version}.jar"
             for (repository in repositories) {
-                val statement = httpClient.get<HttpStatement>("${repository.url}$jarPath")
-                val response = statement.execute()
-                if (response.status == HttpStatusCode.OK) {
-                    FileChannel
-                        .open(Path.of("$filePath.part"), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-                        .use { channel ->
-                            while (response.content.availableForRead > 0) {
-                                response.content.read { byteBuffer ->
-                                    channel.write(byteBuffer)
+                try {
+                    val statement = httpClient.get<HttpStatement>("${repository.url}$jarPath")
+                    val response = statement.execute()
+                    if (response.status == HttpStatusCode.OK) {
+                        FileChannel
+                            .open(Path.of("$filePath.part"), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+                            .use { channel ->
+                                while (response.content.availableForRead > 0) {
+                                    response.content.read { byteBuffer ->
+                                        channel.write(byteBuffer)
+                                    }
                                 }
                             }
-                        }
-                    File("$filePath.part").renameTo(File(filePath))
+                        File("$filePath.part").renameTo(File(filePath))
+                        return
+                    }
+                } catch (e: ClientRequestException) {
+                    if (e.response.status == HttpStatusCode.NotFound) {
+                        continue
+                    }
+                    throw e
                 }
             }
+            throw DependencyJarNotFoundException(artifact)
         }
     }
 }

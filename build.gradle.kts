@@ -40,6 +40,7 @@ dependencies {
     implementation("org.apache.maven:maven:3.6.3")
     implementation("com.github.zafarkhaja:java-semver:0.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
+    implementation("io.ktor:ktor-client-apache:1.5.1")
 
 
     testImplementation(kotlin("test-junit5"))

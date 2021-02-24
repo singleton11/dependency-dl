@@ -46,10 +46,13 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
 
         val artifacts = mutableListOf<Artifact>()
 
+        val markedNodes = mutableSetOf<DependencyTreeNode>()
+
         while (stack.isNotEmpty()) {
             val dependencyTreeNode = stack.pop()
+            markedNodes.add(dependencyTreeNode)
             artifacts.add(dependencyTreeNode.artifact)
-            stack.addAll(dependencyTreeNode.children)
+            stack.addAll(dependencyTreeNode.children.filter { !markedNodes.contains(it) })
         }
 
         return artifacts.filter { it != Artifact.quasiArtifact() }
