@@ -12,9 +12,7 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
     private val notHandledDependencies: MutableSet<Triple<String, String, String>> = mutableSetOf()
 
     override fun add(artifact: Artifact, parent: Artifact?) = parent?.let {
-        if (handledDependencies.contains(Triple(artifact.groupId, artifact.artifactId, artifact.version))) {
-            false
-        } else {
+        if (!handledDependencies.contains(Triple(artifact.groupId, artifact.artifactId, artifact.version))) {
             handledDependencies.add(Triple(artifact.groupId, artifact.artifactId, artifact.version))
             notHandledDependencies.add(Triple(artifact.groupId, artifact.artifactId, artifact.version))
             dependencyMap[parent]?.let { parentNode ->
@@ -49,14 +47,11 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
         return artifacts.filter { it != Artifact.quasiArtifact() }
     }
 
-    private fun add(artifact: Artifact, parentNode: DependencyTreeNode): Boolean {
+    private fun add(artifact: Artifact, parentNode: DependencyTreeNode) {
         return dependencyMap[artifact]?.let { existedNode ->
-            val newNode = addAlreadyExistsDependency(artifact, parentNode, existedNode)
-            dependencyMap[artifact] = newNode
-            newNode.artifact.version != existedNode.artifact.version
+            dependencyMap[artifact] = addAlreadyExistsDependency(artifact, parentNode, existedNode)
         } ?: kotlin.run {
             dependencyMap[artifact] = addNewDependency(artifact, parentNode)
-            true
         }
 
     }

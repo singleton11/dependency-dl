@@ -13,7 +13,7 @@ import mu.KotlinLogging
 class DependencyIndexBuilder(
     private val dependencyIndex: DependencyIndex,
     val modelDependencyResolver: ModelDependencyResolver,
-    private val manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
+    manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
 
     ) {
     private val logger = KotlinLogging.logger { }
@@ -52,8 +52,7 @@ class DependencyIndexBuilder(
             when (event) {
                 is DependencyEvent -> {
                     logger.info { "Handling dependency ${event.artifact}" }
-                    val added = dependencyIndex.add(event.artifact, event.parent)
-                    if (!added) logger.debug { "Artifact already exists ${event.artifact}" }
+                    dependencyIndex.add(event.artifact, event.parent)
                     GlobalScope.launch {
                         logger.debug { "Coroutine for resolving dependency started ${event.artifact}" }
                         try {
