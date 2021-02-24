@@ -30,7 +30,6 @@ class SimpleHttpResolver(
 
     private val logger = KotlinLogging.logger { }
     private var internalRepositories = listOf<Repository>()
-    private val internalCache = mutableMapOf<Triple<String, String, String>, String>()
 
     init {
         internalRepositories = repositories
@@ -39,63 +38,56 @@ class SimpleHttpResolver(
     }
 
     override fun resolveModel(groupId: String, artifactId: String, version: String): ModelSource2 {
-        internalCache[Triple(groupId, artifactId, version)]?.let {
-            val file = File(it)
-            return FileModelSource(file)
-        } ?: kotlin.run {
-            val filePath = "poms/$groupId-$artifactId-$version.xml"
-            val localFile = File(filePath)
-            if (localFile.exists()) {
-                internalCache[Triple(groupId, artifactId, version)] = filePath
-                return FileModelSource(localFile)
-            }
-            for (repository in internalRepositories) {
-                val repositoryUrl = repository.url
-                val pomPath = "${groupId.replace('.', '/')}/$artifactId/$version/$artifactId-$version.pom"
-                val urlString = "$repositoryUrl$pomPath"
-                try {
-                    logger.debug { "Getting artifact metadata $urlString" }
-                    val pom = runBlocking {
-                        httpClient.get<String>(urlString)
-                    }
-                    logger.debug { "Got artifact metadata $urlString" }
-                    val file = File(filePath)
-                    FileChannel
-                        .open(Path.of(filePath), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-                        .use { channel ->
-                            val buff: ByteBuffer = ByteBuffer.wrap(pom.toByteArray())
-                            channel.write(buff)
-                        }
-                    logger.debug { "Artifact metadata saved to ${file.toURI()}" }
-                    internalCache[Triple(groupId, artifactId, version)] = filePath
-                    return FileModelSource(file)
-                } catch (e: ClientRequestException) {
-                    logger.debug(
-                        "Dependency {} not found in repository {}",
-                        "$groupId:$artifactId:$version",
-                        repositoryUrl
-                    )
-                } catch (e: UnresolvedAddressException) {
-                    logger.warn("Unresolved address in dependency {}", "$groupId:$artifactId:$version", repositoryUrl)
-                } catch (e: BindException) {
-                    logger.warn(
-                        "Can't assign requested address for dependency {}",
-                        "$groupId:$artifactId:$version",
-                        repositoryUrl
-                    )
-                } catch (e: ConnectionClosedException) {
-                    logger.warn(
-                        "Connection closed",
-                        "$groupId:$artifactId:$version",
-                        repositoryUrl, e
-                    )
-                } catch (e: UnknownHostException) {
-                    logger.warn(
-                        "Unknown host",
-                        "$groupId:$artifactId:$version",
-                        repositoryUrl, e
-                    )
+        val filePath = "poms/$groupId-$artifactId-$version.xml"
+        val localFile = File(filePath)
+        if (localFile.exists()) {
+            return FileModelSource(localFile)
+        }
+        for (repository in internalRepositories) {
+            val repositoryUrl = repository.url
+            val pomPath = "${groupId.replace('.', '/')}/$artifactId/$version/$artifactId-$version.pom"
+            val urlString = "$repositoryUrl$pomPath"
+            try {
+                logger.debug { "Getting artifact metadata $urlString" }
+                val pom = runBlocking {
+                    httpClient.get<String>(urlString)
                 }
+                logger.debug { "Got artifact metadata $urlString" }
+                val file = File(filePath)
+                FileChannel
+                    .open(Path.of(filePath), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+                    .use { channel ->
+                        val buff: ByteBuffer = ByteBuffer.wrap(pom.toByteArray())
+                        channel.write(buff)
+                    }
+                logger.debug { "Artifact metadata saved to ${file.toURI()}" }
+                return FileModelSource(file)
+            } catch (e: ClientRequestException) {
+                logger.debug(
+                    "Dependency {} not found in repository {}",
+                    "$groupId:$artifactId:$version",
+                    repositoryUrl
+                )
+            } catch (e: UnresolvedAddressException) {
+                logger.warn("Unresolved address in dependency {}", "$groupId:$artifactId:$version", repositoryUrl)
+            } catch (e: BindException) {
+                logger.warn(
+                    "Can't assign requested address for dependency {}",
+                    "$groupId:$artifactId:$version",
+                    repositoryUrl
+                )
+            } catch (e: ConnectionClosedException) {
+                logger.warn(
+                    "Connection closed",
+                    "$groupId:$artifactId:$version",
+                    repositoryUrl, e
+                )
+            } catch (e: UnknownHostException) {
+                logger.warn(
+                    "Unknown host",
+                    "$groupId:$artifactId:$version",
+                    repositoryUrl, e
+                )
             }
         }
         throw DependencyNotFoundException(groupId, artifactId, version)
