@@ -4,14 +4,14 @@ import com.github.singleton11.depenencydl.model.Artifact
 import com.github.singleton11.depenencydl.persistence.model.DependencyTreeNode
 import java.util.*
 
-class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConflictResolver) : DependencyIndex {
+class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConflictResolver) {
 
     private val rootNode: DependencyTreeNode = DependencyTreeNode.quasiNode()
     private val dependencyMap: MutableMap<Artifact, DependencyTreeNode> = mutableMapOf()
     private val handledDependencies: MutableSet<Triple<String, String, String>> = mutableSetOf()
     private val notHandledDependencies: MutableSet<Triple<String, String, String>> = mutableSetOf()
 
-    override fun add(artifact: Artifact, parent: Artifact?) = parent?.let {
+    fun add(artifact: Artifact, parent: Artifact?) = parent?.let {
         if (!handledDependencies.contains(Triple(artifact.groupId, artifact.artifactId, artifact.version))) {
             handledDependencies.add(Triple(artifact.groupId, artifact.artifactId, artifact.version))
             notHandledDependencies.add(Triple(artifact.groupId, artifact.artifactId, artifact.version))
@@ -23,13 +23,13 @@ class TreeDependencyIndex(private val dependencyConflictResolver: DependencyConf
         add(artifact, rootNode)
     }
 
-    override fun markCompleted(artifact: Artifact) {
+    fun markCompleted(artifact: Artifact) {
         notHandledDependencies.remove(Triple(artifact.groupId, artifact.artifactId, artifact.version))
     }
 
-    override fun isAllCompleted() = notHandledDependencies.isEmpty()
+    fun isAllCompleted() = notHandledDependencies.isEmpty()
 
-    override fun getDependenciesToDownload(): List<Artifact> {
+    fun getDependenciesToDownload(): List<Artifact> {
         val stack = Stack<DependencyTreeNode>()
         stack.push(rootNode)
 

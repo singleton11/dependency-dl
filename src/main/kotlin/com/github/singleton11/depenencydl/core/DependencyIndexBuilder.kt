@@ -2,7 +2,7 @@ package com.github.singleton11.depenencydl.core
 
 import com.github.singleton11.depenencydl.integration.ModelDependencyResolver
 import com.github.singleton11.depenencydl.model.*
-import com.github.singleton11.depenencydl.persistence.DependencyIndex
+import com.github.singleton11.depenencydl.persistence.TreeDependencyIndex
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 
 class DependencyIndexBuilder(
-    private val dependencyIndex: DependencyIndex,
+    private val dependencyIndex: TreeDependencyIndex,
     val modelDependencyResolver: ModelDependencyResolver,
     manualReplacements: List<Pair<Artifact, Artifact>> = listOf(),
 
