@@ -20,7 +20,7 @@ import java.io.File
 
 
 fun main() {
-
+    // It could be good to add some validation here
     val artifacts = File("dependencies.txt")
         .readLines()
         .map { it.split(":") }
@@ -29,7 +29,6 @@ fun main() {
         .readLines()
         .map { it.split(" ") }
         .map { Repository(it[0], it[1]) }
-
     val manualReplacements = listOf(
         Artifact("xml-apis", "xml-apis", "2.6.2") to Artifact("xerces", "xmlParserAPIs", "2.6.2"),
         Artifact("xerces", "xerces-impl", "2.6.2") to Artifact("xerces", "xercesimpl", "2.6.2"),
@@ -41,7 +40,6 @@ fun main() {
             "2.20"
         )
     )
-
     val repositories = RepositoryHelper.getInternalMavenRepositories(
         Repositories(coreRepositories).listOfPairs()
     ).toMutableList()
@@ -55,7 +53,6 @@ fun main() {
             }
         }
     }.use { httpClient ->
-
         val simpleHttpResolver = SimpleHttpResolver(
             httpClient,
             repositories,
